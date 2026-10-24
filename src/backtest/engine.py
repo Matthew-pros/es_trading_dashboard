@@ -41,15 +41,20 @@ def run_backtest(
     if primary is None or len(primary) < 253:
         raise ValueError("Nedostatečná historie pro warm-up momenta (vyžadováno alespoň 253 barů).")
 
-    # Keep full warm-up history available; apply requested interval to execution/signal dates only.
+    # Use full history for indicator warm-up and restrict only actionable signal dates.
     all_dates = primary.index
-    if start:
-        all_dates = all_dates[all_dates >= pd.Timestamp(start)]
     if end:
         all_dates = all_dates[all_dates <= pd.Timestamp(end)]
     dates = all_dates.intersection(pd.DatetimeIndex(sorted(set.union(*(set(frame.index) for frame in normalized.values())))))
+    if start:
+        # Keep the warm-up bars in the rolling history but do not create trades before start.
+        signal_start = pd.Timestamp(start)
+    else:
+        signal_start = dates[0]
     if len(dates) < 2:
         raise ValueError("Vybraný interval obsahuje méně než dva obchodní bary.")
+    if signal_start > dates[-2]:
+        raise ValueError("Vybraný interval nemá dostatek budoucích barů pro exekuci signálu.")
 
     state = PortfolioState(model, config.initial_equity)
     equity_rows: list[tuple[pd.Timestamp, float]] = []
@@ -63,8 +68,9 @@ def run_backtest(
             if frame is not None and timestamp in frame.index:
                 position.market_value_usd = position.quantity * float(frame.loc[timestamp, "Close"])
         equity = state.equity_usd
-        equity_rows.append((timestamp, equity))
-        if index >= len(dates) - 1:
+        if timestamp >= signal_start:
+            equity_rows.append((timestamp, equity))
+        if index >= len(dates) - 1 or timestamp < signal_start:
             continue
 
         available = {
@@ -77,7 +83,6 @@ def run_backtest(
         if model in (ModelName.DRBL_MATRIX, ModelName.COMBINED):
             rotation_day = month_rotation_date(timestamp.year, timestamp.month)
             if rotation_day is not None and timestamp.date() >= rotation_day:
-                # Combined starts in ALM; apply matrix rotation only after the simulated ALM fill.
                 if model == ModelName.DRBL_MATRIX or (state.alm_completed and state.alm_fill_confirmed):
                     try:
                         old_asset = state.selected_asset
