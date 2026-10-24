@@ -13,7 +13,7 @@ def monthly_rotation_score(prices:dict[str,pd.DataFrame])->dict[str,float]:
 def choose_rotation(scores:dict[str,float],incumbent:str|None,hysteresis:float=.08)->str|None:
  scores={k:v for k,v in scores.items() if pd.notna(v)}
  if not scores:return None
- challenger=max(scores,key=scores.get)
+ challenger=max(scores,key=lambda ticker: scores[ticker])
  if incumbent is None or incumbent not in scores:return challenger
  threshold=scores[incumbent]+abs(scores[incumbent])*hysteresis
  return challenger if challenger!=incumbent and scores[challenger]>threshold else incumbent
