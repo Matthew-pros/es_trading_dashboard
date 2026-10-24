@@ -46,7 +46,7 @@ def _latest(frame: pd.DataFrame | None, asset: str, config: StrategyConfig) -> d
         last = factors.iloc[-1]
         entry = bool(last["entry"])
         exit_signal = bool(last["exit"])
-        extra = {"entry_level": _finite(last["entry_level"]), "exit_level": _finite(last["exit_level"])}
+        extra: dict[str, object] = {"entry_level": _finite(last["entry_level"]), "exit_level": _finite(last["exit_level"])}
     else:
         factors = regression_factors(frame["Close"], config.regression_period)
         last = factors.iloc[-1]
