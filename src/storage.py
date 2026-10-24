@@ -16,4 +16,4 @@ class Storage:
             cur=c.execute("INSERT INTO backtests(created_at,model,params_json,metrics_json,equity_json,trades_json) VALUES(?,?,?,?,?,?)",(datetime.now(UTC).isoformat(),model,json.dumps(params,default=str),json.dumps(metrics,default=str),json.dumps(equity,default=str),json.dumps(trades,default=str)))
             return int(cur.lastrowid)
     def save_order_preview(self,payload:dict,status:str="PREVIEW_ONLY"):
-        with self._connect() as c:c.execute("INSERT INTO order_previews(created_at,payload_json,status) VALUES(?,?,?)",(datetime.now(timezone.utc).isoformat(),json.dumps(payload,default=str),status))
+        with self._connect() as c:c.execute("INSERT INTO order_previews(created_at,payload_json,status) VALUES(?,?,?)",(datetime.now(UTC).isoformat(),json.dumps(payload,default=str),status))
