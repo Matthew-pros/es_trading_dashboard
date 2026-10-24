@@ -18,3 +18,16 @@ def test_backtest_executes_after_signal_bar(sample_ohlcv):
     )
     if not result.trades.empty:
         assert (pd.to_datetime(result.trades.execution_timestamp) > pd.to_datetime(result.trades.signal_timestamp)).all()
+
+def test_start_date_preserves_pre_start_warmup(sample_ohlcv):
+    start = sample_ohlcv.index[300].date().isoformat()
+    result = run_backtest(
+        {"SPY": sample_ohlcv, "QQQ": sample_ohlcv, "GLD": sample_ohlcv, "IBIT": sample_ohlcv,
+         "UPRO": sample_ohlcv, "TQQQ": sample_ohlcv},
+        ModelName.ALM, StrategyConfig(), CostConfig(), start=start,
+    )
+    assert not result.equity.empty
+    assert result.equity.index.min() >= pd.Timestamp(start)
+    if not result.trades.empty:
+        assert pd.to_datetime(result.trades.signal_timestamp).min() >= pd.Timestamp(start)
+        assert (pd.to_datetime(result.trades.execution_timestamp) > pd.to_datetime(result.trades.signal_timestamp)).all()
