@@ -1,3 +1,4 @@
+import pandas as pd
 from src.config import CostConfig, StrategyConfig
 from src.models import ModelName, PortfolioState
 from src.services.recommendation_service import recommend
