@@ -17,7 +17,10 @@ def recommend(model:ModelName,prices:dict,state:PortfolioState,strategy:Strategy
         age=(datetime.now(UTC)-latest_timestamp.astimezone(UTC)).total_seconds()/3600
         if age>72:mode=DataMode.STALE
     if rec.ticker and rec.delta_usd:
-        f=prices.get(rec.ticker) or prices.get(next((k for k,v in strategy.ticker_mapping.items() if v==rec.ticker),""))
+        f = prices.get(rec.ticker)
+        if f is None or f.empty:
+            base_ticker = next((key for key, value in strategy.ticker_mapping.items() if value == rec.ticker), None)
+            f = prices.get(base_ticker) if base_ticker else None
         price=float(f.Close.iloc[-1]) if f is not None and not f.empty else 0.
         if price>0:
             side="buy" if rec.delta_usd>0 else "sell";qty=abs(rec.delta_usd)/price

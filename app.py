@@ -9,6 +9,7 @@ from src.data.yfinance_provider import YahooFinanceProvider
 from src.models import ModelName, PortfolioState, Position, DataMode
 from src.services.backtest_service import TICKERS, get_prices, run_model_backtest
 from src.services.recommendation_service import recommend
+from src.strategies.drbl_matrix import process_monthly_rotation
 from src.broker.ibkr_adapter import IBKROrderAdapter
 from src.storage import Storage
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -49,7 +50,7 @@ if load_button or not st.session_state.prices:
         msgs = []
         for ticker in TICKERS:
             try:
-                result = provider.get_daily(ticker, start.isoformat(), (end + timedelta(days=1)).isoformat())
+                result = provider.get_daily(ticker, "1990-01-01", (end + timedelta(days=1)).isoformat())
                 prices[ticker] = result.bars
                 msgs.append(f"{ticker}: {len(result.bars)} barů, poslední {result.last_timestamp}, HISTORICAL")
             except Exception as exc:
@@ -66,6 +67,16 @@ if abs(state.cash_usd + sum(p.market_value_usd for p in state.positions.values()
 def get_recommendation(selected_model: ModelName):
     current_state = st.session_state.portfolio_states[selected_model.value]
     latest = max((f.index[-1].to_pydatetime() for f in prices.values() if not f.empty), default=None)
+    if latest is not None and (
+        selected_model == ModelName.DRBL_MATRIX
+        or (selected_model == ModelName.COMBINED and current_state.alm_completed and current_state.alm_fill_confirmed)
+    ):
+        rotation_prices = {
+            ticker: frame.loc[:latest]
+            for ticker, frame in prices.items()
+            if ticker in ("SPY", "QQQ", "GLD", "IBIT")
+        }
+        process_monthly_rotation(rotation_prices, current_state, strategy, latest.date().isoformat())
     return recommend(selected_model, prices, current_state, strategy, cost_config, latest_timestamp=latest, gld_leveraged_ticker=gld_lev)
 
 def show_recommendation(rec):

@@ -82,7 +82,7 @@ def run_backtest(
         # Rotation is a distinct monthly event; it is not re-run on every daily recommendation.
         if model in (ModelName.DRBL_MATRIX, ModelName.COMBINED):
             rotation_day = month_rotation_date(timestamp.year, timestamp.month)
-            if rotation_day is not None and timestamp.date() >= rotation_day:
+            if state.selected_asset is None or (rotation_day is not None and timestamp.date() >= rotation_day):
                 if model == ModelName.DRBL_MATRIX or (state.alm_completed and state.alm_fill_confirmed):
                     try:
                         old_asset = state.selected_asset

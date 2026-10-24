@@ -83,14 +83,13 @@ def _base_asset_for_position(state: PortfolioState, config: StrategyConfig, gld_
     if len(state.positions) != 1:
         return None
     held_ticker = next(iter(state.positions.values())).ticker
-    candidates = {
-        base for base in ("SPY", "QQQ", "GLD", "IBIT")
-        if held_ticker in {
-            config.ticker_mapping.get(base),
-            config.leveraged_mapping.get(base),
-            gld_leveraged_ticker or config.gld_leveraged_ticker,
-        }
-    }
+    candidates: set[str] = set()
+    for base in ("SPY", "QQQ", "GLD", "IBIT"):
+        mapped_tickers = {config.ticker_mapping.get(base), config.leveraged_mapping.get(base)}
+        if base == "GLD":
+            mapped_tickers.add(gld_leveraged_ticker or config.gld_leveraged_ticker)
+        if held_ticker in mapped_tickers:
+            candidates.add(base)
     return next(iter(candidates)) if len(candidates) == 1 else None
 
 
@@ -111,7 +110,8 @@ def generate_matrix_recommendation(
             "Více současně držených aktiv: ruční kontrola.", indicators=indicators, available=False,
         )
 
-    selected = state.selected_asset or _base_asset_for_position(state, config, gld_leveraged_ticker)
+    held_asset = _base_asset_for_position(state, config, gld_leveraged_ticker)
+    selected = state.selected_asset or held_asset
     if selected is None:
         return Recommendation(
             state.model, None, source, data_mode, False, None, "ROTATION_REQUIRED", 0, 0, 0, 0,
@@ -144,6 +144,15 @@ def generate_matrix_recommendation(
             "SELL_ALL" if held else "HOLD_CASH", 0.0, -current_value, 0.0, 0.0,
             "Režim C: uzavřít spravovanou pozici a držet hotovost. " + reason,
             Regime.C, indicators,
+        )
+
+    # A monthly rotation must close the prior asset even when the newly selected asset has no entry.
+    if held and held_asset is not None and selected is not None and held_asset != selected:
+        return Recommendation(
+            state.model, None, source, data_mode, False, held.ticker, "ROTATE_POSITION", 0.0,
+            -held.market_value_usd, 0.0, 0.0,
+            f"Měsíční rotace {held_asset} → {selected}; nejprve uzavřít staré aktivum. " + reason,
+            regime, indicators,
         )
 
     if not entry:
@@ -200,7 +209,11 @@ def process_monthly_rotation(
         # Missing scores do not mark the monthly rotation as completed.
         return state.selected_asset, False, scores
     scheduled_date = month_rotation_date(pd.Timestamp(rotation_date).year, pd.Timestamp(rotation_date).month)
-    if scheduled_date is None or pd.Timestamp(rotation_date).date() < scheduled_date:
+    # With no incumbent, initialize from the best available score immediately.
+    # Once initialized, subsequent changes are restricted to the scheduled session.
+    if state.selected_asset is not None and (
+        scheduled_date is None or pd.Timestamp(rotation_date).date() < scheduled_date
+    ):
         return state.selected_asset, False, scores
     month = pd.Timestamp(rotation_date).strftime("%Y-%m")
     if state.last_rotation_month == month:
