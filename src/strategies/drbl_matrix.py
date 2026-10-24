@@ -209,11 +209,9 @@ def process_monthly_rotation(
         # Missing scores do not mark the monthly rotation as completed.
         return state.selected_asset, False, scores
     scheduled_date = month_rotation_date(pd.Timestamp(rotation_date).year, pd.Timestamp(rotation_date).month)
-    # With no incumbent, initialize from the best available score immediately.
-    # Once initialized, subsequent changes are restricted to the scheduled session.
-    if state.selected_asset is not None and (
-        scheduled_date is None or pd.Timestamp(rotation_date).date() < scheduled_date
-    ):
+    # Initial selection is part of the first valid rotation event and must also wait
+    # until the scheduled trading session. The state remains uninitialized beforehand.
+    if scheduled_date is None or pd.Timestamp(rotation_date).date() < scheduled_date:
         return state.selected_asset, False, scores
     month = pd.Timestamp(rotation_date).strftime("%Y-%m")
     if state.last_rotation_month == month:
