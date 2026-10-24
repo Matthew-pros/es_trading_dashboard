@@ -1,1 +1,1 @@
-"""Aplikační služby."""
+"""Application services."""

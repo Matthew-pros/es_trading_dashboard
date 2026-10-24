@@ -1,1 +1,1 @@
-"""Poskytovatelé tržních dat."""
+"""Market data provider interfaces."""
