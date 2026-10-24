@@ -30,7 +30,7 @@ def run_backtest(data:dict[str,pd.DataFrame],model:ModelName,config:StrategyConf
     if end:idx=idx[idx<=pd.Timestamp(end)]
     idx=idx.intersection(pd.DatetimeIndex(sorted(set.union(*(set(f.index) for f in normalized.values())))))
     if len(idx)<2:raise ValueError("Vybraný interval obsahuje méně než dva obchodní bary.")
-    state=PortfolioState(model,config.initial_equity);equity=[];rows=[];warnings=[];active=None
+    state=PortfolioState(model,config.initial_equity);equity=[];rows=[];warnings=[]
     for i,ts in enumerate(idx):
         # Settle marked holdings at the current bar close before computing signal.
         for ticker,pos in list(state.positions.items()):

@@ -92,7 +92,7 @@ def show_recommendation(rec):
             preview = adapter.preview_order(rec.ticker, rec.target_usd, current, px)
             st.write("**Order preview – pouze návrh, bez odeslání**")
             st.dataframe(pd.DataFrame([{"Ticker":preview.ticker,"Strana":preview.side,"Target USD":preview.target_usd,"Delta USD":preview.delta_usd,"Cena":preview.estimated_price,"Odhad kusů":preview.estimated_quantity,"Komise USD":preview.commission_usd,"Slippage USD":preview.slippage_usd,"Stav":preview.status}]),use_container_width=True,hide_index=True)
-            if st.button("Uložit order preview", key=f"save-{selected_model.value}"):
+            if st.button("Uložit order preview", key=f"save-{model.value}"):
                 try: Storage().save_order_preview(preview.__dict__); st.success("Návrh uložen do lokální SQLite databáze.")
                 except Exception as exc: st.error(f"Návrh se nepodařilo uložit: {exc}")
         else: st.info("Pro odhad počtu kusů chybí historická cena konkrétního tickeru.")

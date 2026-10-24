@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime,timezone
+from datetime import UTC,datetime
 from .backtest_service import get_prices
 from ..config import CostConfig,StrategyConfig
 from ..costs import estimate_costs
@@ -13,7 +13,7 @@ def recommend(model:ModelName,prices:dict,state:PortfolioState,strategy:Strategy
     elif model==ModelName.DRBL_MATRIX:rec=generate_matrix_recommendation(prices,state,strategy,source,mode,gld_leveraged_ticker)
     else:rec=generate_combined_recommendation(prices,state,strategy,source,mode,gld_leveraged_ticker)
     if latest_timestamp is not None:
-        if latest_timestamp.tzinfo is None:latest_timestamp=latest_timestamp.replace(tzinfo=timezone.utc)
+        if latest_timestamp.tzinfo is None:latest_timestamp=latest_timestamp.replace(tzinfo=UTC)
         age=(datetime.now(timezone.utc)-latest_timestamp.astimezone(timezone.utc)).total_seconds()/3600
         if age>72:mode=DataMode.STALE
     if rec.ticker and rec.delta_usd:
