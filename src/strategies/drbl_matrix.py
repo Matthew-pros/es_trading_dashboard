@@ -56,9 +56,11 @@ def _latest(frame: pd.DataFrame | None, asset: str, config: StrategyConfig) -> d
     adx = _finite(adx_wilder(frame, config.adx_period).iloc[-1])
     relative_volume = _finite(rvol(frame["Volume"], config.rvol_short, config.rvol_long).iloc[-1])
     filters_available = adx is not None and relative_volume is not None
+    adx_for_regime = adx if adx is not None else float("-inf")
+    rvol_for_regime = relative_volume if relative_volume is not None else float("-inf")
     regime = (
         Regime.C if exit_signal
-        else Regime.A if entry and filters_available and adx > 25 and relative_volume > 1.4
+        else Regime.A if entry and filters_available and adx_for_regime > 25 and rvol_for_regime > 1.4
         else Regime.B if entry
         else Regime.UNKNOWN
     )
