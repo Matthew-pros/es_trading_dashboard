@@ -14,7 +14,7 @@ def recommend(model:ModelName,prices:dict,state:PortfolioState,strategy:Strategy
     else:rec=generate_combined_recommendation(prices,state,strategy,source,mode,gld_leveraged_ticker)
     if latest_timestamp is not None:
         if latest_timestamp.tzinfo is None:latest_timestamp=latest_timestamp.replace(tzinfo=UTC)
-        age=(datetime.now(timezone.utc)-latest_timestamp.astimezone(timezone.utc)).total_seconds()/3600
+        age=(datetime.now(UTC)-latest_timestamp.astimezone(UTC)).total_seconds()/3600
         if age>72:mode=DataMode.STALE
     if rec.ticker and rec.delta_usd:
         f=prices.get(rec.ticker) or prices.get(next((k for k,v in strategy.ticker_mapping.items() if v==rec.ticker),""))
