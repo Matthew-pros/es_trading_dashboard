@@ -9,8 +9,8 @@ class IBKRProvider(DataProvider):
     """Read-only IBKR history provider. Never submits orders."""
     def __init__(self, host: str | None = None, port: int | None = None, client_id: int | None = None, timeout: float = 5.0):
         self.host = host or os.getenv("IBKR_HOST", "127.0.0.1")
-        self.port = int(port if port is not None else os.getenv("IBKR_PORT", "7497"))
-        self.client_id = int(client_id if client_id is not None else os.getenv("IBKR_CLIENT_ID", "71"))
+        self.port = int(port if port is not None else (os.getenv("IBKR_PORT") or "7497"))
+        self.client_id = int(client_id if client_id is not None else (os.getenv("IBKR_CLIENT_ID") or "71"))
         self.timeout = timeout
     def get_daily(self, ticker: str, start: str, end: str | None = None) -> DataResult:
         try:
